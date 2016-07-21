@@ -1,51 +1,19 @@
 #include <MonteCarlo.hh>
-// constructor for monte_carlo object
+
 MonteCarlo::MonteCarlo(
 	XY const & xy, 
 	Landscape const & landscape, 
     float const temperature
 ):
+    xy_(xy);
 	temperature_( temperature ),
-	last_accept_( 0 ),
-	counter_(0),
-	total_score_of_last_considered_pose_( 0.0 ),
-	last_accepted_score_( 0.0 ),
-	lowest_score_( 0.0 )
+	last_accept_z_( 10000 ),
+	lowest_z_( 10000 )
 {
 	last_accepted_pose_ = PoseOP( new Pose() );
 	lowest_score_pose_ = PoseOP( new Pose() );
-	// score_function_ = new ScoreFunction(scorefxn);
-	score_function_ = scorefxn.clone();
-	reset( init_pose );
-
-	last_check_ = 0;
-	check_frequency_ = basic::options::option[ basic::options::OptionKeys::mc::convergence_check_frequency ]();
+    landscape_function_ = new Landscape(landscape);
 }
-
-MonteCarlo::MonteCarlo(
-	ScoreFunction const & scorefxn, // ScoreFunctionCOP scorefxn,
-	Real const temperature
-):
-	temperature_( temperature ),
-	autotemp_( false ),
-	quench_temp_( 0.0 ),
-	last_accept_( 0 ),
-	mc_accepted_( MCA_accepted_score_beat_last ), // an empty pose beats the absence of a pose
-	counter_( TrialCounterOP( new TrialCounter ) ),
-	update_boinc_( true ),
-	total_score_of_last_considered_pose_( 0.0 ),
-	last_accepted_score_( 0.0 ),
-	lowest_score_( 0.0 ),
-	heat_after_cycles_( 150 )
-{
-	last_accepted_pose_ = PoseOP( new Pose() );
-	lowest_score_pose_ = PoseOP( new Pose() );
-	// score_function_ = new ScoreFunction(scorefxn);
-	score_function_ = scorefxn.clone();
-	last_check_ = 0;
-	check_frequency_ = basic::options::option[ basic::options::OptionKeys::mc::convergence_check_frequency ]();
-}
-
 
 MonteCarlo::~MonteCarlo()
 {
@@ -68,210 +36,51 @@ MonteCarlo::reset_scorefxn(
 }
 
 void
-MonteCarlo::set_temperature( Real const temp )
+MonteCarlo::set_temperature( float const temp )
 {
 	temperature_ = temp;
 }
 
+float
+MonteCarlo::get_temperature() const
+{
+	return temperature_;
+}
+
 /// return the simulation state to the lowest energy structure we've seen
 void
-MonteCarlo::recover_low( Pose & pose )
+MonteCarlo::recover_low( XY & xy )
 {
 	( pose ) = ( *lowest_score_pose_ );
 	*last_accepted_pose_ = *lowest_score_pose_ ;
-	//last_accepted_pose_ = new Pose( *lowest_score_pose_ );
-	last_accepted_score_ = last_accepted_pose_->energies().total_energy();
-}
-
-
-void
-MonteCarlo::show_state() const
-{
-	TR << "MC: " << temperature_
-		<< "  " << (*score_function_)(*last_accepted_pose_)
-		<< "  " << (*score_function_)(*lowest_score_pose_)
-		<< "  " << last_accepted_score()
-		<< "  " << lowest_score()
-		<< "  " << last_accept_
-		<< "  " << autotemp_
-		<< "  " << quench_temp_
-		<< "  " << to_string( mc_accepted_ )
-		<< std::endl;
-	show_counters();
+	last_accepted_score_ = last_accepted_xy_->;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 
 void
-MonteCarlo::show_scores() const
+MonteCarlo::show_current_lowest_z() const
 {
-	TR << "MonteCarlo:: last_accepted_score,lowest_score: " <<
-		last_accepted_score() << ' ' << lowest_score() << std::endl;
+	    std:cout << "MonteCarlo:: current_lowest_z: " << lowest_z() << std::endl;
 }
-/////////////////////////////////////////////////////////////////////////////
-void
-MonteCarlo::reset_counters()
-{
-	counter_->reset();
-}
-
-/// @detail return number of trials since last reset
-core::Size
-MonteCarlo::total_trials() const {
-	return counter_->total_trials();
-}
-/////////////////////////////////////////////////////////////////////////////
-void
-MonteCarlo::show_counters() const {
-	counter_->show();
-}
-
-void
-MonteCarlo::change_weight( core::scoring::ScoreType const & t, Real const & setting ) {
-	score_function_->set_weight( t, setting );
-}
-
-/// set the scorefxn,  re-scores last-accepted and lowest-score pose
-void
-MonteCarlo::score_function( ScoreFunction const & scorefxn )
-{
-	using namespace scoring;
-
-	// *score_function_ = scorefxn;
-	// score_function_ = new ScoreFunction(scorefxn);
-	score_function_ = scorefxn.clone();
-	//TR << "new score_function_ within mc!" << std::endl;
-
-	lowest_score_ = (*score_function_)( *lowest_score_pose_ );
-	//TR << "lowest_score: " << lowest_score_ << " total: " << lowest_score_pose_->energies().total_energy() << std::endl;
-	/// Now handled automatically.  score_function_->accumulate_residue_total_energies( *lowest_score_pose_ );
-
-	if ( false ) { // DEBUG
-		pose::Pose copy_pose;
-		copy_pose = *lowest_score_pose_;
-		copy_pose.energies().clear();
-		TR << "score copy" << std::endl;
-		Real const copy_score = (*score_function_)( copy_pose );
-		if ( std::abs( copy_score - lowest_score_ ) > 1E-6 ) {
-			TR << "Score discrepancy.  lowest_score: " << lowest_score_ << " vs copy score: " << copy_score << std::endl;
-			TR << "pose score: ";
-			lowest_score_pose_->energies().total_energies().show_if_nonzero_weight( TR , score_function_->weights() );
-			TR << std::endl;
-
-			TR << "copy score: ";
-			copy_pose.energies().total_energies().show_if_nonzero_weight( TR , score_function_->weights() );
-			TR << std::endl;
-
-			TR << "Difference: ";
-			core::scoring::EnergyMap emap = lowest_score_pose_->energies().total_energies();
-			emap -= copy_pose.energies().total_energies();
-			emap.show_if_nonzero_weight( TR, score_function_->weights() );
-			TR << std::endl;
-		}
-	}
-
-	//T("protocols.moves.MonteCarlo.score_function") << "lowest_score";
-	//score_function_->show( T("protocols.moves.MonteCarlo.score_function"), *lowest_score_pose_ );
-	//T("protocols.moves.MonteCarlo.score_function");
-
-	last_accepted_score_ = (*score_function_)( *last_accepted_pose_ );
-	//TR << "last_accepted_score: " << last_accepted_score << " total: " << last_accepted_pose_->energies().total_energy() << std::endl;
-	/// Now handled automatically.  score_function_->accumulate_residue_total_energies( *last_accepted_pose_ );
-
-
-	if ( false ) { // DEBUG
-		pose::Pose copy_pose;
-		copy_pose = *last_accepted_pose_;
-		copy_pose.energies().clear();
-		TR << "score copy" << std::endl;
-		Real const copy_score = (*score_function_)( copy_pose );
-		if ( std::abs( copy_score - last_accepted_score_ ) > 1E-6 ) {
-			TR << "Score discrepancy.  last_accepted_score: " << last_accepted_score_ << " vs copy score: " << copy_score << std::endl;
-			TR << "pose score: ";
-			last_accepted_pose_->energies().total_energies().show_if_nonzero_weight( TR, score_function_->weights() );
-			TR << std::endl;
-
-			TR << "copy score: ";
-			copy_pose.energies().total_energies().show_if_nonzero_weight( TR, score_function_->weights() );
-			TR << std::endl;
-
-			TR << "Difference: ";
-			core::scoring::EnergyMap emap = last_accepted_pose_->energies().total_energies();
-			emap -= copy_pose.energies().total_energies();
-			emap.show_if_nonzero_weight( TR, score_function_->weights() );
-			TR << std::endl;
-		}
-	}
-
-
-	//T("protocols.moves.MonteCarlo.score_function") << "last_accepted";
-	//score_function_->show( T("protocols.moves.MonteCarlo.score_function"), *last_accepted_pose_ );
-	//T("protocols.moves.MonteCarlo.score_function") << " finished!";
-
-	///SML 6/25/08 - if last accepted is now better than lowest, change it!
-	///explicit this-> necessary to resolve function name against identically named local variables
-	if ( this->last_accepted_score() < this->lowest_score() ) {
-		PROF_START( basic::MC_ACCEPT );
-		*lowest_score_pose_ = *last_accepted_pose_;
-		lowest_score_ = last_accepted_score_;
-		PROF_STOP( basic::MC_ACCEPT );
-	}
-
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//////////////////////////////
-// @details behavior depends on setting of temperature
-//
-// return true for an accept, false otherwise
-//
-//  mc_accepted
-//   3 = accepted:score beat low score and last_accepted score
-//   2 = accepted:score beat last_accepted score
-//   1 = thermally accepted: score worse than last_accepted score
-//   0 = not accepted
-//
-// Optional inputs:
-//
-//  proposal_density_ratio = ratio of backward proposal probability to
-//                            forward proposal probability,
-//                            to maintain detailed balance.
-//
-//  inner_score_delta_over_temperature
-//                          = change in energy in any separate inner loop that
-//                            used Boltzmann criterion with different energy
-//                            function. Don't penalize with that energy
-//                            difference again. See, e.g.,
-//                             Hetenyi et al., JCP 117: 8203-8207.
-//                            ( Note: functionally redundant with
-//                               proposal_density_ratio)
 
 bool
 MonteCarlo::boltzmann(
-	Pose & pose,
+	XY & xy,
 	std::string const & move_type, // = unk
 	core::Real const proposal_density_ratio, // = 1
 	core::Real const inner_score_delta_over_temperature // = 0
 )
 {
-
-	// Work around a current bug in the pose observer classes..
-#ifdef BOINC_GRAPHICS
-	if ( update_boinc_ ) {
-		boinc::Boinc::update_graphics_current( pose );
-	}
-#endif
-
 	// score the pose:
-	Real const score( (*score_function_)( pose ) );
+	Real const score( (*score_function_)( xy ) );
 	//now delegate decision making...
 	bool const accept( boltzmann( score, move_type, proposal_density_ratio, inner_score_delta_over_temperature ) );
 
 	//rejected ?
 	if ( !accept ) {
 		evaluate_convergence_checks( pose, true /*reject*/, false /* not final*/ );
-		pose = ( *last_accepted_pose_ );
+		xy = ( last_accepted_xy_ );
 		return false; // rejected
 	}
 
