@@ -1,125 +1,62 @@
-#ifndef INCLUDED_protocols_moves_MonteCarlo_hh
-#define INCLUDED_protocols_moves_MonteCarlo_hh
-
-
-// type headers
-#include <core/types.hh>
-
-// unit headers
-#include <protocols/moves/MonteCarlo.fwd.hh>
-#include <protocols/moves/MonteCarloStatus.hh>
-#include <protocols/moves/TrialCounter.hh>
-
-// package headers
-#include <core/pose/Pose.fwd.hh>
-#include <core/scoring/ScoreFunction.fwd.hh>
-#include <core/scoring/ScoreType.hh>
-
-// utility headers
-#include <utility/pointer/ReferenceCount.hh>
-
 // C++ headers
 #include <map>
-
-#include <protocols/moves/MonteCarloExceptionConverge.fwd.hh>
-#include <utility/vector1.hh>
 #include <string>
 
-#ifdef WIN32
-#include <protocols/moves/MonteCarloExceptionConverge.hh>
-#endif
-
-
-// Forward declarations
-
-namespace protocols {
-namespace moves {
-
-/// @brief This object is responsible for all of the major functions needed in
+/// This object is responsible for all of the major functions needed in
 /// a Monte Carlo simulation. Its main purpose is to apply the Metropolis
 /// Criterion on a pose, based on a ScoreFunction, temperature, and the
 /// previously accepted pose. It stores the lowest-energy pose ecountered,
 /// the last-accepted pose in the simulation, and various other statistics.
 ///
-///
 /// Output Methods:
 ///     MonteCarlo.show_counters()
-///     MonteCarlo.show_scores()
-///     MonteCarlo.show_state()
+///     MonteCarlo.show_z()
 /// Common Methods:
-///     MonteCarlo.last_accepted_score
-///     MonteCarlo.last_accepted_pose
-///     MonteCarlo.lowest_score
-///     MonteCarlo.lowest_score_pose
-///     MonteCarlo.score_function
+///     MonteCarlo.last_accepted_z
+///     MonteCarlo.last_accepted_xy
+///     MonteCarlo.lowest_z
+/////   MonteCarlo.xy_with_lowest_score
+///     MonteCarlo.function
 ///     MonteCarlo.set_temperature
 ///     MonteCarlo.temperature
-class MonteCarlo : public utility::pointer::ReferenceCount {
-public:
-	typedef core::scoring::ScoreFunction ScoreFunction;
-	typedef core::scoring::ScoreFunctionOP ScoreFunctionOP;
-	typedef core::scoring::ScoreFunctionCOP ScoreFunctionCOP;
-	typedef core::pose::Pose Pose;
-	typedef core::pose::PoseOP PoseOP;
-	typedef core::pose::PoseCOP PoseCOP;
-	typedef core::Real Real;
 
+class MonteCarlo {
 
 public:
 
-	/// @brief Copy constructor
+	/// Copy constructor
 	MonteCarlo( MonteCarlo const & );
 
 	/// @brief Constructs a useable MonteCarlo object
 	///
-	/// mc = MonteCarlo( init_pose , scorefxn , temp )
+	/// mc = MonteCarlo( xy , function , temp )
 	///
-	/// Pose           init_pose   /manipulated during the simulation
-	/// ScoreFunction  scorefxn    /evaluates pose scores
-	/// Real (float)   temp        /used in the Metropolis Criterion
-	MonteCarlo(
-		Pose const & init_pose, // PoseCOP init_pose,
-		ScoreFunction const & scorefxn, // ScoreFunctionCOP scorefxn,
+	/// xy           xy       /manipulated during the simulation
+	/// Function     scorefxn /evaluates pose scores
+	/// Real (float) temp     /used in the Metropolis Criterion
+	
+    MonteCarlo(
+		XY const & xy, // PoseCOP init_pose,
+		Function const & function, // ScoreFunctionCOP scorefxn,
 		Real const temperature
 	);
 
-
-	/// @brief Constructor without Pose -- call reset(pose) before first use
+	/// @brief Constructor with default xy, call reset(XY) before first use
 	MonteCarlo(
 		ScoreFunction const & scorefxn, // ScoreFunctionCOP scorefxn,
 		Real const temperature
 	);
 
 	/// @brief Empty destructor in C++ file to reduce number of necessary includes
-	virtual ~MonteCarlo();
 
-	virtual
-	MonteCarloOP clone() {
-		return MonteCarloOP( new MonteCarlo( *this ) );
-	}
-
-	/// @brief Resets the ScoreFunction
-	void
-	reset_scorefxn(
-		Pose const & init_pose,
-		ScoreFunction const & scorefxn
-	);
-
-	/// @brief Change the weight on a score term in the object's scorefunction. Useful when we don't want to reset the whole scorefunction during an annealing step.
-	void
-	change_weight( core::scoring::ScoreType const & t, Real const & setting );
+	~MonteCarlo();
 
 	/// @brief Sets the temperature value used in the Metropolis Criterion to  <temp>
 	///
 	/// example(s):
 	///     mc.set_temperature( temp )
-	/// See also:
-	///     MonteCarlo
-	///     MonteCarlo.temperature
-	///     MonteCarlo.show_state
-	virtual void
+	void
 	set_temperature( Real const temp );
-
 
 	/// @brief Returns the temperature value used in the Metropolis Criterion
 	///
