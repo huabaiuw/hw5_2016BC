@@ -1,104 +1,16 @@
-// -*- mode:c++;tab-width:2;indent-tabs-mode:t;show-trailing-whitespace:t;rm-trailing-spaces:t -*-
-// vi: set ts=2 noet:
-//
-// (c) Copyright Rosetta Commons Member Institutions.
-// (c) This file is part of the Rosetta software suite and is made available under license.
-// (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
-// (c) For more information, see http://www.rosettacommons.org. Questions about this can be
-// (c) addressed to University of Washington UW TechTransfer, email: license@u.washington.edu.
-
-/// @file
-/// @brief
-/// @author Phil Bradley
-
-// Unit Headers
-#include <protocols/moves/MonteCarlo.hh>
-#include <protocols/moves/TrialCounter.hh>
-
-// Project Headers
-#include <core/pose/Pose.hh>
-#include <core/scoring/Energies.hh>
-#include <core/scoring/ScoreFunction.hh>
-
-// ObjexxFCL Headers
-#include <ObjexxFCL/format.hh>
-#include <ObjexxFCL/string.functions.hh> //Pretty output.
-
-// Numeric Headers
-#include <numeric/numeric.functions.hh>
-#include <numeric/random/random.hh>
-
-// Utility Headers
-#include <basic/Tracer.hh>
-#include <basic/prof.hh>
-
-#include <basic/options/option.hh>
-#include <basic/options/keys/mc.OptionKeys.gen.hh>
-
-#include <protocols/moves/MonteCarloExceptionConverge.hh>
-#include <utility/vector1.hh>
-
-
-// for rosetta++ like boinc graphics
-#ifdef BOINC_GRAPHICS
-#include <protocols/boinc/boinc.hh>
-#endif
-
-using basic::T;
-using basic::Error;
-using basic::Warning;
-
-static THREAD_LOCAL basic::Tracer TR( "protocols.moves.MonteCarlo" );
-
-namespace protocols {
-namespace moves {
-
-using namespace core;
-using namespace ObjexxFCL::format;
-
-/// @details The copy constructor does not copy the OPs, but rather creates new objects using the copy
-/// constructors or the clone() methods of the objects being pointed at.  This is important, since otherwise,
-/// a copy of a Monte Carlo object could corrupt the state held in the original MonteCarlo object.
-MonteCarlo::MonteCarlo( MonteCarlo const & src ) :
-	utility::pointer::ReferenceCount(),
-	last_accepted_pose_( src.last_accepted_pose_ ? new core::pose::Pose( * src.last_accepted_pose_ ) : 0 ),
-	lowest_score_pose_( src.lowest_score_pose_ ? new core::pose::Pose( * src.lowest_score_pose_ ) : 0 ),
-	temperature_( src.temperature_ ),
-	score_function_( src.score_function_ ? src.score_function_->clone() : core::scoring::ScoreFunctionOP(0) ),
-	autotemp_( src.autotemp_ ),
-	quench_temp_( src.quench_temp_ ),
-	last_accept_( src.last_accept_ ),
-	mc_accepted_( src.mc_accepted_ ),
-	counter_( src.counter_ ),
-	update_boinc_( src.update_boinc_ ),
-	total_score_of_last_considered_pose_( src.total_score_of_last_considered_pose_ ),
-	last_accepted_score_( src.last_accepted_score_ ),
-	lowest_score_( src.lowest_score_ ),
-	heat_after_cycles_( src.heat_after_cycles_ ),
-	convergence_checks_( src.convergence_checks_ ),
-	last_check_( src.last_check_ ),
-	check_frequency_( src.check_frequency_ )
-{
-}
-
-
+#include <MonteCarlo.hh>
 // constructor for monte_carlo object
 MonteCarlo::MonteCarlo(
-	Pose const & init_pose, // PoseCOP init_pose,
-	ScoreFunction const & scorefxn, // ScoreFunctionCOP scorefxn,
-	Real const temperature
+	XY const & xy, 
+	Landscape const & landscape, 
+    float const temperature
 ):
 	temperature_( temperature ),
-	autotemp_( false ),
-	quench_temp_( 0.0 ),
 	last_accept_( 0 ),
-	mc_accepted_( MCA_accepted_score_beat_last ), // init_pose beats the absence of a pose
-	counter_( TrialCounterOP( new TrialCounter ) ),
-	update_boinc_( true ),
+	counter_(0),
 	total_score_of_last_considered_pose_( 0.0 ),
 	last_accepted_score_( 0.0 ),
-	lowest_score_( 0.0 ),
-	heat_after_cycles_( 150 )
+	lowest_score_( 0.0 )
 {
 	last_accepted_pose_ = PoseOP( new Pose() );
 	lowest_score_pose_ = PoseOP( new Pose() );
