@@ -1,117 +1,95 @@
 #include <cstdlib>
-#include <string>
 #include "Coordinates.cc"
-
+#include "Uniform.cc"
 
 ///////////////// This part is the declarations of the MonteCarlo Class /////////////////////////////////////
-///////////////// In Rosetta code convention, the part normally will be put in the separated .hh header file  
+///////////////// In Rosetta, this part normally will be put in the separated .hh header file  
 class MonteCarlo {
 public:
-    MonteCarlo( Coordinates & xyz, float temperature);
 
-	~MonteCarlo();
+  // Constructor
+  // Usage: MonteCarlo mc = MonteCarlo(xyz, temp)
+  MonteCarlo( Coordinates & xyz, float temperature );
 
-	void
-	set_temperature( float temp );
+  ~MonteCarlo();
 
-    float	
-	get_temperature() const; 
+  void set_temperature( float temp );
+  float	get_temperature() const; 
 
-	bool
-	boltzmann(Coordinates & xyz);
+  // This is the workhorse for MonteCarlo Class
+  // this function compares the z values of the new Coordinates "new_xyz" and the stored Coordinates "last_accepted_xyz_". 
+  // If the "new_xyz" has a lower z, the function will update "last_accepted_xyz_" with the new one, and return true.
+  // If the "new_xyz" has a higher z, the function will still accept the "new_xyz" with certain probability, 
+  // where the variable "temperature_" will affect how easy to accept a Coordinates with higher z value.
+  // The higher the temperature, the easier to accept.
+  // If the function rejected the new_xyz, it will overwrite the "new_xyz" with the "last_accepted_xyz_".
+  // This is why there is pass by reference sign here "&".
+  bool boltzmann(Coordinates & new_xyz);
+  
+  Coordinates const & get_last_accepted_coordinates() const { return last_accepted_xyz_;}
 
-	Coordinates const &
-	get_last_accepted_coordinates() const
-	{
-		return last_accepted_xyz_;
-	}
-
-	Coordinates const &
-	get_coordinates_with_min_z() const
-	{
-		return xyz_with_min_z_;
-	}
-
-	double last_accepted_z() const;
-	double min_z() const;
-
-	void clear();
+  double last_accepted_z() const;
 
 private:
-    Coordinates xyz_;
 	Coordinates last_accepted_xyz_;
-	Coordinates xyz_with_min_z_;
 
     double last_accepted_z_;
-    double min_z_;
 
 	float temperature_;
 };
 
-
-
-///////////////// The following part is the implementations of the MonteCarlo Class /////////////////////////////////////
-///////////////// In Rosetta code convention, the part normally will be put in the .cc file  
+///////////////// The following part contains the implementations of the MonteCarlo Class /////////////////////////////////////
+///////////////// In Rosetta, this part normally will be put in the .cc file  
 
 MonteCarlo::MonteCarlo(
 	Coordinates & xyz, 
     float temperature
 ):
 	temperature_( temperature ),
-	last_accepted_z_( xyz.get_z() ),
 	last_accepted_xyz_( xyz ),
-	min_z_( xyz.get_z() )
+	last_accepted_z_( xyz.get_z() )
 {
-    xyz_.clone(xyz);
-    boltzmann(xyz); 
 }
 
-MonteCarlo::~MonteCarlo() { std::cout << "HHAHHA" << std::endl;}
-
-void 
-MonteCarlo::clear() {
-// 	last_accepted_xyz_ = NULL;
-// 	xyz_with_min_z_(NULL); 
-}
-
-float
-MonteCarlo::get_temperature() const
-{
-	return temperature_;
-}
-
-void
-MonteCarlo::set_temperature(float temp) { temperature_ = temp;}
+MonteCarlo::~MonteCarlo() { std::cout << "This MonteCarlo Object is deleted!" << std::endl;}
 
 bool
 MonteCarlo::boltzmann(Coordinates & new_xyz) {
+  double z_delta( new_xyz.get_z() - last_accepted_z_ ); // compare the z value of new_xyz and the stored last accepted z value;
+                                                        // calcualte the difference, and save it in the variable "z_delta"; 
 
-	double z_delta( new_xyz.get_z() - last_accepted_z_ ); // compare the z of new_xyz and the stored last accepted z;
-                                                          // calcualte the difference, and save it in the variable "z_delta"; 
+  double boltz_factor =  ( -z_delta / temperature_ );   // Useful Wiki page: https://en.wikipedia.org/wiki/Boltzmann_distribution
+                                                        // This is Boltzmann weighting factor:"-E/kT",
+                                                        // E stands for the energy gap, here we are using the difference of z value;
+                                                        // k is Boltzmann constant; T is absolute temperature;
+                                                        // Here, as well as in Rosetta, what we mean temperature is actually kT;
+                                                        // The choose of temperature is empirical, "0.6" is a common choice in Rosetta.
 
-	double boltz_factor =  ( -z_delta / temperature_ );   // 
-	double probability = std::exp( std::min (40.0, std::max(-40.0,boltz_factor)) );
+  double probability = std::exp( std::min (40.0, std::max(-40.0,boltz_factor)) );
+                                                        // Here we transform the boltzmann factor to a probability
+                                                        // e^boltz_factor, and we are setting an upper and lower boundaries for boltz_factor;
+                                                        // If the new z is lower than stored z, in other words, the z_delta is negative,
+                                                        // the boltz_factor will be positive, and the probablity will be larger than 1.
 
-	if ( probability < 1 && (double)rand() / (double)RAND_MAX >= probability) {
-            new_xyz = last_accepted_xyz_;
-			return false; // rejected
-    }
+  Uniform uniformRG; // create a Uniform Object, RG stands for "Random number Generator";
 
-	if (new_xyz.get_z() < min_z_) {
-		min_z_ = new_xyz.get_z();
-	}
+  // generate the uniformly distributed random number between 0 and 1. 
+  // Then, for probability < 1, the smaller the probability, the higher chance the "new_xyz" get rejected. 
+  if ( probability < 1 && uniformRG.getRandom() >= probability) {
+    new_xyz = last_accepted_xyz_;
+	return false; // rejected
+  }
 
-	last_accepted_z_ = new_xyz.get_z();
-	last_accepted_xyz_ = new_xyz;
+  // otherwise, accept the "new_xyz", and update the stored Coordinates and z value.
 
-	return true; // accept!
+  last_accepted_z_ = new_xyz.get_z();
+  last_accepted_xyz_ = new_xyz;
+  return true; // accept!
 }
 
+float MonteCarlo::get_temperature() const { return temperature_; }
 
+void MonteCarlo::set_temperature(float temp) { temperature_ = temp;}
 
-double
-MonteCarlo::last_accepted_z() const { return last_accepted_z_;}
-
-double
-MonteCarlo::min_z() const { return min_z_;}
+double MonteCarlo::last_accepted_z() const { return last_accepted_z_;}
 

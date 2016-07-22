@@ -1,28 +1,44 @@
+/// This Coordinates class contains three double numbers, x_, y_, z_,
+/// which are used to describe the coordinates of a point in 3-D dimension. 
+/// Users can set and modify x_ and y_, and calculate z_, according certain Function.
+/// In this exercise, we are only dealing with three functions
+
 #include <iostream>
+#include <stdexcept>
 #include "Landscape.cc"
 
 class Coordinates {
 
 public:
-    void update_z(); 
-
+    void update_z(); // Because we need to use this function before the constructor, 
+                     // we put declare it here.
     Coordinates():
     x_(1.0),
-    y_(1.0){
+    y_(1.0),
+    landscape_function_(NULL)
+    {
         update_z();
     } 
 
-    void clone(Coordinates & src)
+    Coordinates(std::string fxn):
+    x_(1.0),
+    y_(1.0),
+    landscape_function_(fxn)
+    {
+        update_z();
+    } 
+
+    Coordinates(Coordinates & src)
     {
         x_ = src.x_;
         y_ = src.y_;
         z_ = src.z_;
+        landscape_function_ = src.landscape_function_;
     } 
 
     ~Coordinates(){}
 
 ////// getter and setter
-
     double get_x() {return x_;}
     void modify_x(double delta){x_ += delta; update_z();}
     void set_x(double x){x_ = x; update_z();}
@@ -33,36 +49,29 @@ public:
 
     double get_z() {return z_;}
 
-    double slope_x()
-    {
-        return x_slope;
-    }
-
-    double slope_y(){
-        return y_slope;
-    }
+    std::string get_landscape_function() {return landscape_function_; }
+    void set_landscape_function(std::string new_function) {landscape_function_= new_function; update_z(); }
 
 private:
     double x_;
     double y_;
     double z_;
-    double x_slope;
-    double y_slope;
+    std::string landscape_function_;
 };
 
 void Coordinates::update_z() {
-        // Rastrigin ras(x_, y_);
-        // z_ = ras.get_z();
-        // x_slope=ras.slope_x();
-        // y_slope=sphere.slope_y();
-        Ackley ackley(x_, y_);
-        z_ = ackley.get_z();
-        x_slope=ackley.slope_x();
-        y_slope=ackley.slope_y();
 
-        // Sphere sphere(x_, y_);
-        // z_=sphere.get_z();
-        // x_slope=sphere.slope_x();
-        // y_slope=sphere.slope_y();
+         Landscape * landscape = NULL;
+
+         if (landscape_function_ == "sum_squares") { landscape = new SumSquares(x_, y_);}
+         else if (landscape_function_ == "rastrigin") { landscape = new Rastrigin(x_, y_);}
+         else if (landscape_function_ == "ackley") { landscape = new Ackley(x_, y_);}
+         else{ 
+           delete landscape; z_=1.0; 
+           throw std::invalid_argument( "This function hasn't been defined!" );
+         }
+
+         z_=landscape->get_z();
+         delete landscape;
 }
 
