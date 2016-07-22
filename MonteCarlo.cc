@@ -1,16 +1,15 @@
 #include <cstdlib>
 #include <string>
-// #include <Landscape.cc>
 #include "Coordinates.cc"
 
+
+///////////////// This part is the declarations of the MonteCarlo Class /////////////////////////////////////
+///////////////// In Rosetta code convention, the part normally will be put in the separated .hh header file  
 class MonteCarlo {
 public:
-    MonteCarlo(
-		Coordinates & xyz, 
-		float temperature
-	);
+    MonteCarlo( Coordinates & xyz, float temperature);
 
-	// ~MonteCarlo();
+	~MonteCarlo();
 
 	void
 	set_temperature( float temp );
@@ -35,6 +34,7 @@ public:
 
 	double last_accepted_z() const;
 	double min_z() const;
+
 	void clear();
 
 private:
@@ -49,6 +49,10 @@ private:
 };
 
 
+
+///////////////// The following part is the implementations of the MonteCarlo Class /////////////////////////////////////
+///////////////// In Rosetta code convention, the part normally will be put in the .cc file  
+
 MonteCarlo::MonteCarlo(
 	Coordinates & xyz, 
     float temperature
@@ -62,8 +66,7 @@ MonteCarlo::MonteCarlo(
     boltzmann(xyz); 
 }
 
-// MonteCarlo::~MonteCarlo() { std::cout << "HHAHHA" << std::endl;}
-
+MonteCarlo::~MonteCarlo() { std::cout << "HHAHHA" << std::endl;}
 
 void 
 MonteCarlo::clear() {
@@ -81,35 +84,34 @@ void
 MonteCarlo::set_temperature(float temp) { temperature_ = temp;}
 
 bool
-MonteCarlo::boltzmann(Coordinates & xyz) {
+MonteCarlo::boltzmann(Coordinates & new_xyz) {
 
-	double score_delta( xyz.get_z() - last_accepted_z_ );
-	double boltz_factor =  ( -score_delta / temperature_ );
+	double z_delta( new_xyz.get_z() - last_accepted_z_ ); // compare the z of new_xyz and the stored last accepted z;
+                                                          // calcualte the difference, and save it in the variable "z_delta"; 
+
+	double boltz_factor =  ( -z_delta / temperature_ );   // 
 	double probability = std::exp( std::min (40.0, std::max(-40.0,boltz_factor)) );
 
-	if ( probability < 1 ) {
-		if ((double)rand() / (double)RAND_MAX >= probability ) {
-            xyz = last_accepted_xyz_;
+	if ( probability < 1 && (double)rand() / (double)RAND_MAX >= probability) {
+            new_xyz = last_accepted_xyz_;
 			return false; // rejected
-		}
     }
 
-	if (xyz.get_z() < min_z_) {
-		min_z_ = xyz.get_z();
+	if (new_xyz.get_z() < min_z_) {
+		min_z_ = new_xyz.get_z();
 	}
 
-	last_accepted_z_ = xyz.get_z();
-	last_accepted_xyz_ = xyz;
+	last_accepted_z_ = new_xyz.get_z();
+	last_accepted_xyz_ = new_xyz;
 
 	return true; // accept!
 }
+
+
 
 double
 MonteCarlo::last_accepted_z() const { return last_accepted_z_;}
 
 double
-MonteCarlo::min_z() const
-{
-	return min_z_;
-}
+MonteCarlo::min_z() const { return min_z_;}
 
