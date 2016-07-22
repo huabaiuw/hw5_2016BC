@@ -12,22 +12,25 @@
 
 int main(){
 
-    XY test;
-    test.x_ = 4.5;
-    test.y_ = 2.3;
+    Coordinates test;
+    double input_x;
+    double input_y;
 
     std::cout << "Please enter a x: ";
-    std::cin >> test.x_;
+    std::cin >> input_x; 
 
     std::cout << "Please enter a y: ";
-    std::cin >> test.y_;
+    std::cin >> input_y;
+
+    test.set_x(input_x);
+    test.set_y(input_y);
 
     std::cout << "Please enter a temp: ";
     float temp;
     std::cin >> temp;
 
     Landscape landscape;
-    MonteCarlo mc = MonteCarlo(test, landscape, temp); 
+    MonteCarlo mc = MonteCarlo(test, temp); 
     
     return 0;
 }

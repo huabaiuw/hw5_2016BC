@@ -1,19 +1,13 @@
-// C++ headers
 #include <string>
-#include <Landscape.cc>
-
-struct XY {
-    double x_;
-    double y_;
-};
+// #include <Landscape.cc>
+#include <Coordinates.cc>
 
 class MonteCarlo {
 public:
     MonteCarlo(
-		XY const & xy_, 
-        Landscape const & landscape,
+		Coordinates const & xyz, 
 		float const temperature
-	)
+	);
 
 	~MonteCarlo();
 
@@ -24,74 +18,32 @@ public:
 	get_temperature() const; 
 
 	bool
-	boltzmann(XY & xy);
+	boltzmann(Coordinates & xyz);
 
-// void
-//	reset( XY const & xy );
-
-	void
-	set_last_accepted_pose(
-		Pose const & pose
-	);
-
-	void
-	set_last_accepted_xy(
-		XY const& xy,
-		double z 
-	);
-
-	void
-	set_lowest_score_xy(
-		XY const& xy,
-        double z
-	);
-
-	XY const &
-	last_accepted_xy() const
+	Coordinates const &
+	get_last_accepted_coordinates() const
 	{
-		return *last_accepted_xy_;
+		return last_accepted_coordinates_;
 	}
 
-	XY const &
-	lowest_score_xy() const
+	Coordinates const &
+	get_coordinates_with_min_z() const
 	{
-		return *lowest_score_pose_;
+		return lowest_z_coordinates_;
 	}
 
-	void
-	recover_low( XY & xy );
-
-	/// @brief Sets the ScoreFunction to  <scorefxn> , re-scores
-	/// last accepted pose and lowest score pose
-
-	void
-	set_landscape( Landscape const & landscape );
-
-	/// @brief Returns the MonteCarlo ScoreFunction
-
-	Landscape const & get_landscape() const;
-
-	/// @brief Displays the last accepted score and the lowest score
-	void show_scores() const;
-
-	void reset_counters();
-	void show_counters() const;
-
-	Real last_accepted_z() const;
-	Real lowest_z() const;
-	void clear_z();// remove last_accepted and lowest_z
+	double last_accepted_z() const;
+	double min_z() const;
+	void clear();
 
 private:
-    XY xy_;
-	XY last_accepted_xy_;
-	XY xy_with_lowest_z_;
+    Coordinates xyz_;
+	Coordinates last_accepted_xyz_;
+	Coordinates xyz_with_min_z_;
 
-    double z_;
     double last_accepted_z_;
-    double lowest_z_;
+    double min_z_;
 
 	float temperature_;
-
-	Landscape* landscape_function_;
 };
 

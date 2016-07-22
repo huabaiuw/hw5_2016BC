@@ -6,10 +6,10 @@ public:
     float get_z() {return z_;}
 
 protected:
-    void set_z(float z){z_ = z;}
+    void set_z(double z){z_ = z;}
 
 private:
-    float z_;
+    double z_;
 };
 
 
