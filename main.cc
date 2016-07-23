@@ -83,7 +83,7 @@ int main(){
   float large_step = 1000; 
   std::cin >> large_step;
   float small_step = 0.01;
-  float step_size;
+  float step_size = large_step;
 
   std::cout << "Please enter an upper_temperature: ";
   float high_temp = 0.1;
@@ -100,7 +100,7 @@ int main(){
     temperature = (high_temp - low_temp)*std::exp(-i)+low_temp; 
     mc.set_temperature(temperature);
     
-    step_size = (large_step - small_step)*std::exp(-i)+small_step;
+    if (i > outer/2) {step_size = (large_step - small_step)*std::exp(-i)+small_step;}
 
     for (int j=0; j < inner; j++){
       std::cout << "=========================="<< "Outer cycle #: "<<i+1<<" Inner cycle #: "<< j+1 <<"====================="<<std::endl;
@@ -120,8 +120,9 @@ int main(){
       std::cout << "After_boltzmann Z: "<<xyz.get_z()<<std::endl;
     }
 
+  }
+      std::cout << "============= FINAL results ================"<<std::endl;
       std::cout << "Final X: "<<xyz.get_x() << " Final Y: " << xyz.get_y()<<std::endl;
       std::cout << "Final Z: "<<xyz.get_z()<<std::endl;
-  }
   return 0;
 }
