@@ -100,7 +100,7 @@ int main(){
     temperature = (high_temp - low_temp)*std::exp(-i)+low_temp; 
     mc.set_temperature(temperature);
     
-    if (i > outer/2) {step_size = (large_step - small_step)*std::exp(-i)+small_step;}
+    if (i > 9*outer/10) {step_size = (large_step - small_step)*std::exp(-i)+small_step;}
 
     for (int j=0; j < inner; j++){
       std::cout << "=========================="<< "Outer cycle #: "<<i+1<<" Inner cycle #: "<< j+1 <<"====================="<<std::endl;
