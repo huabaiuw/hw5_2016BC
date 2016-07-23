@@ -1,3 +1,6 @@
+#ifndef INCLUDED_MonteCarlo_cc
+#define INCLUDED_MonteCarlo_cc
+
 #include <cstdlib>
 #include "Coordinates.cc"
 #include "Uniform.cc"
@@ -32,9 +35,7 @@ public:
 
 private:
 	Coordinates last_accepted_xyz_;
-
     double last_accepted_z_;
-
 	float temperature_;
 };
 
@@ -81,15 +82,13 @@ MonteCarlo::boltzmann(Coordinates & new_xyz) {
   }
 
   // otherwise, accept the "new_xyz", and update the stored Coordinates and z value.
-
   last_accepted_z_ = new_xyz.get_z();
   last_accepted_xyz_ = new_xyz;
   return true; // accept!
 }
 
 float MonteCarlo::get_temperature() const { return temperature_; }
-
 void MonteCarlo::set_temperature(float temp) { temperature_ = temp;}
-
 double MonteCarlo::last_accepted_z() const { return last_accepted_z_;}
 
+#endif

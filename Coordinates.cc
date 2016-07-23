@@ -12,6 +12,8 @@ class Coordinates {
 public:
     void update_z(); // Because we need to use this function before the constructor, 
                      // we put declare it here.
+                     //
+    // constructor for Coordinates
     Coordinates():
     x_(1.0),
     y_(1.0),
@@ -20,6 +22,8 @@ public:
         update_z();
     } 
 
+    // constructor with input Landscape function name,
+    // currently, only there choices: "sum_squares", "ackley", and "rastrigin"
     Coordinates(std::string fxn):
     x_(1.0),
     y_(1.0),
@@ -28,6 +32,7 @@ public:
         update_z();
     } 
 
+    // copy constructor
     Coordinates(Coordinates & src)
     {
         x_ = src.x_;
@@ -38,7 +43,9 @@ public:
 
     ~Coordinates(){}
 
-////// getter and setter
+
+    // getters and setters
+    // the modify functions are important
     double get_x() {return x_;}
     void modify_x(double delta){x_ += delta; update_z();}
     void set_x(double x){x_ = x; update_z();}
@@ -47,8 +54,11 @@ public:
     void modify_y(double delta){y_ += delta; update_z();}
     void set_y(double y){y_ = y; update_z();}
 
+    // get the z value
+    // we are not providing setter z, because z value is calculated by using update_z() function;
     double get_z() {return z_;}
 
+    // we are also store the information of the landscape function, which we are using to calculate z.
     std::string get_landscape_function() {return landscape_function_; }
     void set_landscape_function(std::string new_function) {landscape_function_= new_function; update_z(); }
 
@@ -60,18 +70,24 @@ private:
 };
 
 void Coordinates::update_z() {
+   
+         // create a pointer of the parent class Landscape
 
-         Landscape * landscape = NULL;
-
+         Landscape * landscape = NULL; 
          if (landscape_function_ == "sum_squares") { landscape = new SumSquares(x_, y_);}
          else if (landscape_function_ == "rastrigin") { landscape = new Rastrigin(x_, y_);}
          else if (landscape_function_ == "ackley") { landscape = new Ackley(x_, y_);}
          else{ 
-           delete landscape; z_=1.0; 
+           delete landscape; 
            throw std::invalid_argument( "This function hasn't been defined!" );
          }
 
+
+         /// please find the correct function in Landscape.cc, and update the z value 
+         /// z_=landscape->get_z();
          z_=landscape->get_z();
+
+         // Question: what is the purpose of "delete"? Is this necessary? Once we got the z value, we release the memory.
          delete landscape;
 }
 
