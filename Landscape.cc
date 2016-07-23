@@ -81,4 +81,20 @@ private:
     double y_;
 };
 
+class Booth: public Landscape {
+public:
+    Booth( double x, double y) {
+        x_= x;
+        y_= y;
+        set_z(calculate_z());
+    }
+
+    double calculate_z() {
+        return pow(x_ + 2*y_-7, 2) + pow(2*x_+y_-5, 2);
+    }
+    
+private:
+    double x_;
+    double y_;
+};
 #endif

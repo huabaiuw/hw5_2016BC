@@ -79,11 +79,15 @@ int main(){
 
   // You can play with this step scalar. 
   // This will directly related to the estimate distance between the starting point the global minimum
+  std::cout << "Please enter an upper_step size: ";
   float large_step = 1000; 
+  std::cin >> large_step;
   float small_step = 0.01;
   float step_size;
 
+  std::cout << "Please enter an upper_temperature: ";
   float high_temp = 0.1;
+  std::cin >> high_temp;
   float low_temp = 0.00001;
   float temperature;
 

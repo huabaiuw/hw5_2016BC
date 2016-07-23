@@ -77,6 +77,7 @@ void Coordinates::update_z() {
          if (landscape_function_ == "sum_squares") { landscape = new SumSquares(x_, y_);}
          else if (landscape_function_ == "rastrigin") { landscape = new Rastrigin(x_, y_);}
          else if (landscape_function_ == "ackley") { landscape = new Ackley(x_, y_);}
+         else if (landscape_function_ == "booth") { landscape = new Booth(x_, y_);}
          else{ 
            delete landscape; 
            throw std::invalid_argument( "This function hasn't been defined!" );
