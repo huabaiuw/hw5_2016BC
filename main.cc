@@ -109,8 +109,8 @@ int main(){
       double delta2 = uniform_RG.getRandom() - 0.5;
       std::cout << "Previous X: "<< xyz.get_x() << " Previous Y: "<< xyz.get_y()<<" Previous Z: "<< xyz.get_z()<<std::endl;
 
-      xyz.modify_x(step_size*delta1);
-      xyz.modify_y(step_size*delta2);
+      if (j%2 == 0) {xyz.modify_x(step_size*delta1);}
+      if (j%2 != 0) {xyz.modify_y(step_size*delta2);}
 
       std::cout << "X changed: "<< step_size*delta1 << " Y changed: "<< step_size*delta2<<std::endl;
       std::cout << "New X: "<<xyz.get_x() << " New Y: " << xyz.get_y()<<" New Z: "<<xyz.get_z()<<std::endl;
